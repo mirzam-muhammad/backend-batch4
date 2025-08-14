@@ -1,0 +1,58 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generate/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Role {
+  id    BigInt   @id @default(autoincrement())
+  name  String   @unique
+  users User[]
+}
+
+model User {
+  id       BigInt   @id @default(autoincrement())
+  username String   @unique
+  password String
+  role_id  BigInt?
+  role     Role?    @relation(fields: [role_id], references: [id])
+  transactions Transaction[]
+}
+
+model Product {
+  id          BigInt   @id @default(autoincrement())
+  name        String
+  description String?
+  price       Decimal  @db.Decimal(10, 2)
+  stock       Int
+  transactionItems TransactionItem[]
+}
+
+model Transaction {
+  id              BigInt   @id @default(autoincrement())
+  user_id         BigInt?
+  user            User?    @relation(fields: [user_id], references: [id])
+  transaction_date DateTime @default(now())
+  total_amount    Decimal  @db.Decimal(10, 2)
+  items           TransactionItem[]
+}
+
+model TransactionItem {
+  id             BigInt   @id @default(autoincrement())
+  transaction_id BigInt?
+  transaction    Transaction? @relation(fields: [transaction_id], references: [id])
+  product_id     BigInt?
+  product        Product?  @relation(fields: [product_id], references: [id])
+  quantity       Int
+  price          Decimal  @db.Decimal(10, 2)
+}

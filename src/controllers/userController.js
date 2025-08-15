@@ -2,6 +2,8 @@ const e = require('express');
 const {PrismaClient} = require('../../generate/prisma')
 const pool = require('../config/db')
 const bcrypt = require("bcrypt")
+const validator = require('validator')
+const jwt = require('jsonwebtoken')
 
 const prisma = new PrismaClient()
 
@@ -25,6 +27,13 @@ exports.createUser = async (req, res, next) => {
         throw err;
     }
 
+
+const strongPass = validator.isStrongPassword(password)
+if (!strongPass) {
+    const err = new Error("Password harus mengandung minimal 8 karakter dengankombinasi huruf besar, huruf kecil, angka, dan simbol")
+    err.status = 400;
+    throw err;
+}
     // const existUser = await pool.query("SELECT id FROM user WHERE email = $1 LIMIT 1", [email]);
     
     const existUser = await prisma.user.findUnique({
@@ -116,6 +125,12 @@ exports.login = async (req, res, next) => {
         throw err;
     }
 
+    const token = jwt.sign({
+        id: result.id.toString(),
+        username: result.username,
+        role: result.role.name
+    }, process.env.JWT_SECRET, {expiresIn: '3m'})
+
     return res.status(200).json({
         message: "Login berhasil",
         data: {
@@ -124,7 +139,8 @@ exports.login = async (req, res, next) => {
             role_id: result.role_id.toString(),
             role: result.role
             ? { ...result.role, id: result.role.id.toString()}
-            : null
+            : null,
+            token: token
         }
     })
 
@@ -135,7 +151,7 @@ exports.login = async (req, res, next) => {
 
 exports.updateUser = async (req, res, next) => {
     try {
-        const {id} = req.params
+        const {id} = req.user
         const {username} = req.body
 
         if (!username || !id){
@@ -176,17 +192,13 @@ exports.updateUser = async (req, res, next) => {
 
 exports.deleteUser = async (req, res, next) => {
     try {
-        const {id} = req.params
+        const {id, role} = req.user
 
-if (!id){
-            const err = new Error("id harus di isi");
-            err.status = 400;
+        if (role !== 'admin'){
+            const err = new Error("Hanya admin yang bisa menghapus user");
+            err.status = 403;
             throw err;
         }
-
-        const isExistUser = await prisma.user.findUnique({
-        where: {id}
-    })
 
     if (!isExistUser){
         const err = new Error("Username tidak ditemukan");

@@ -35,7 +35,7 @@ app.use('/*splat', async(req, res, next) => {
 });
 
 app.use((err, req, res, next) => {
-    console.error("Terjadi error", err.message)
+    console.error("Terjadi error", err.stack || err)
 
     return res.status(err.status || 500).json({
         message: "Terjadi error",

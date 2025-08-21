@@ -11,7 +11,8 @@ exports.getUser = (req, res, next) => {
     const user1 = {
         nama: "Mirzam",
         asal: "Karanganyar",
-        pekerjaan: "Software Developer"
+        pekerjaan: "Software Developer",
+        domisili: "Selayar"
     }
 
     res.send(user1);
